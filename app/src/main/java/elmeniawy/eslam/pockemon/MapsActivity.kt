@@ -22,8 +22,10 @@ import com.google.android.gms.maps.model.MarkerOptions
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     @Suppress("PrivatePropertyName")
     private val ACCESS_LOCATION_CODE = 0
-    var location: Location? = null
+    private var location: Location? = null
+    private var oldLocation: Location? = null
     private lateinit var mMap: GoogleMap
+    private val pockemonsList = ArrayList<Pockemon>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,7 +57,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
         locationManager
-                .requestLocationUpdates(LocationManager.GPS_PROVIDER,
+                .requestLocationUpdates(LocationManager.NETWORK_PROVIDER,
                         3,
                         3f,
                         myLocation)
@@ -77,6 +79,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         mMap = googleMap
 
         checkPermission()
+        loadPockemons()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -125,9 +128,21 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     inner class MyThread : Thread() {
+        init {
+            oldLocation = Location("Start")
+            oldLocation!!.latitude = 0.0
+            oldLocation!!.longitude = 0.0
+        }
+
         override fun run() {
             while (true) {
                 try {
+                    if (oldLocation!!.distanceTo(location) == 0f) {
+                        continue
+                    }
+
+                    oldLocation = location
+
                     runOnUiThread {
                         mMap.clear()
 
@@ -143,7 +158,26 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                                                 .fromResource(R.drawable.mario))
                         )
 
-                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myLocation, 14f))
+                        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(myLocation, 20f))
+
+                        // Add markers for pockemons
+                        for (pockemon in pockemonsList) {
+                            if (!pockemon.catched) {
+                                val pockemonLocation = LatLng(pockemon.latitude!!,
+                                        pockemon.longitude!!)
+
+                                mMap.addMarker(
+                                        MarkerOptions()
+                                                .position(pockemonLocation)
+                                                .title(pockemon.name)
+                                                .snippet(pockemon.description
+                                                        + ", Power: "
+                                                        + pockemon.power)
+                                                .icon(BitmapDescriptorFactory
+                                                        .fromResource(pockemon.image!!))
+                                )
+                            }
+                        }
                     }
 
                     Thread.sleep(1000)
@@ -151,5 +185,22 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                 }
             }
         }
+    }
+
+    private fun loadPockemons() {
+        pockemonsList.add(Pockemon("bulbasaur",
+                "bulbasaur description",
+                R.drawable.bulbasaur,
+                55.0, 31.042320, 31.361506))
+
+        pockemonsList.add(Pockemon("charmander",
+                "charmander description",
+                R.drawable.charmander,
+                50.0, 31.042163, 31.361157))
+
+        pockemonsList.add(Pockemon("squirtle",
+                "squirtle description",
+                R.drawable.squirtle,
+                45.0, 31.042132, 31.361463))
     }
 }
