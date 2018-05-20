@@ -26,6 +26,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private var oldLocation: Location? = null
     private lateinit var mMap: GoogleMap
     private val pockemonsList = ArrayList<Pockemon>()
+    private var playerPower = 0.0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -163,8 +164,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                         // Add markers for pockemons
                         for (pockemon in pockemonsList) {
                             if (!pockemon.catched) {
-                                val pockemonLocation = LatLng(pockemon.latitude!!,
-                                        pockemon.longitude!!)
+                                val pockemonLocation = LatLng(pockemon.location!!.latitude,
+                                        pockemon.location!!.longitude)
 
                                 mMap.addMarker(
                                         MarkerOptions()
@@ -176,12 +177,32 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                                                 .icon(BitmapDescriptorFactory
                                                         .fromResource(pockemon.image!!))
                                 )
+
+                                if (location!!.distanceTo(pockemon.location) < 2) {
+                                    val pockemonIndex = pockemonsList.lastIndexOf(pockemon)
+                                    pockemon.catched = true
+                                    pockemonsList[pockemonIndex] = pockemon
+                                    playerPower += pockemon.power!!
+
+                                    Toast
+                                            .makeText(applicationContext,
+                                                    "Catched "
+                                                            + pockemon.name
+                                                            + "\nYour power now is $playerPower",
+                                                    Toast.LENGTH_LONG)
+                                            .show()
+                                }
                             }
                         }
                     }
 
                     Thread.sleep(1000)
                 } catch (ex: Exception) {
+                    Toast
+                            .makeText(applicationContext,
+                                    ex.message,
+                                    Toast.LENGTH_LONG)
+                            .show()
                 }
             }
         }
